@@ -197,8 +197,9 @@ git_prompt_is_active() {
 
 git_dirty_status() {
   local git_index
-  git_index=${1:=$(command git status --porcelain $GIT_STATUS_OPTIONS  2> /dev/null)}
-  if [[ git_index == '' ]]; then
+  git_index=${1:=$(command git status --porcelain -b $GIT_STATUS_OPTIONS  2> /dev/null)}
+  # only one line means clean, it's only the branch name reported
+  if [[ $(echo $git_index | wc -l) == 1 ]]; then
     echo $ZSH_THEME_GIT_PROMPT_CLEAN
   else
     echo $ZSH_THEME_GIT_PROMPT_DIRTY
