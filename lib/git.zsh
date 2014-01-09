@@ -195,6 +195,39 @@ git_prompt_is_active() {
     $(command git config --get oh-my-zsh.hide-status 2>/dev/null) != "1" ]]
 }
 
+git_dirty_status() {
+  local git_index
+  git_index=${1:=$(command git status --porcelain -b $GIT_STATUS_OPTIONS  2> /dev/null)}
+  # only one line means clean, it's only the branch name reported
+  if [[ $(echo $git_index | wc -l) == 1 ]]; then
+    echo $ZSH_THEME_GIT_PROMPT_CLEAN
+  else
+    echo $ZSH_THEME_GIT_PROMPT_DIRTY
+  fi
+}
+
+# not to be called on its own
+_git_prompt_branch() {
+  echo $1 | head -1 | grep -oP '(?<=^## ).*?(?=$|\s|\.)'
+}
+
+git_prompt_complete() {
+  declare -Ag ZSH_THEME_GIT_PROMPT_COMPLETE
+  ZSH_THEME_GIT_PROMPT_COMPLETE=()
+
+  git_prompt_is_active || return
+
+  local git_index
+  git_index=$(command git status --porcelain -b $GIT_STATUS_OPTIONS 2> /dev/null)
+  ZSH_THEME_GIT_PROMPT_COMPLETE[branch]=$(_git_prompt_branch $git_index)
+
+  [[ $ZSH_THEME_GIT_PROMPT_COMPLETE[branch] == '' ]] && return
+  ZSH_THEME_GIT_PROMPT_COMPLETE[change]=$(git_change_status $git_index)
+  ZSH_THEME_GIT_PROMPT_COMPLETE[stash]=$(git_stash_status)
+  ZSH_THEME_GIT_PROMPT_COMPLETE[remote]=$(git_remote_status $git_index)
+  ZSH_THEME_GIT_PROMPT_COMPLETE[dirty]=$(git_dirty_status $git_index)
+}
+
 # Used to deactive git prompt updates for a single repository.
 # Some users need this when they enter huge git repositories, which
 # might unacceptibly slow down your prompt
